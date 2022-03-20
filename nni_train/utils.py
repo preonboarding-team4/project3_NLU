@@ -118,7 +118,7 @@ def init_device():
     return device
 
 
-def save_checkpoint(model, exp_result):
+def save_checkpoint(model, exp_result, params):
     exp_name = "task3_sts"
     scores = ["f1 score",  "pearson r"]
 
@@ -137,9 +137,10 @@ def save_checkpoint(model, exp_result):
         is_best = True
 
     with mlflow.start_run(experiment_id=exp_id):
-        print("save metrics...\r", end="")
+        print("save metric & params...\r", end="")
         mlflow.log_metrics(exp_result)
-        print("save metrics...OK")
+        mlflow.log_params(params)
+        print("save metric & params...OK")
 
         if is_best:
             print("save model...\r", end="")

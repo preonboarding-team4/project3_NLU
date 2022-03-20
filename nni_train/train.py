@@ -27,7 +27,7 @@ def data_qc(paragrahp:str):
     return paragrahp
 
 
-def train_model(model, optimizer, scheduler, train_dataloader, valid_dataloader=None, epochs=2):
+def train_model(model, params, optimizer, scheduler, train_dataloader, valid_dataloader=None, epochs=2):
         stats_name = ["MSE loss", "f1 score", "pearson r"]
         digit = len(str(len(train_dataloader)))
 
@@ -84,7 +84,7 @@ def train_model(model, optimizer, scheduler, train_dataloader, valid_dataloader=
             if valid_result['MSE loss'] < best_loss:
                 best_loss = valid_result['MSE loss']
 
-            save_checkpoint(model, valid_result)
+            save_checkpoint(model, valid_result, params)
         
         nni.report_final_result(best_loss)
         print("Train Completed. End Program.")
@@ -226,7 +226,8 @@ if __name__ == '__main__':
                                        train_dataloader, 
                                        lr=learning_rate,
                                        epochs=epochs)
-    train_model(model, 
+    train_model(model = model, 
+                params = params,
                 optimizer = optimizer,
                 scheduler = scheduler,
                 train_dataloader = train_dataloader, 

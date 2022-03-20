@@ -3,3 +3,4 @@ __pycache__
 model*
 test*
 train/torch_model
+nni_train/torch_model

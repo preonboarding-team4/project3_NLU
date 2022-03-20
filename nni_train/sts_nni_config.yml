@@ -1,0 +1,17 @@
+experimentName: Semantic Textual Similarity with KR BERT(charactor sub)
+searchSpaceFile: sts_search_space.json
+trialCommand: python train.py
+trialConcurrency: 1
+maxExperimentDuration: 48h
+maxTrialNumber: 999
+tuner:
+  # choice:
+  # TPE, Anneal, Evolution, SMAC, BatchTuner, GridSearch, Hyperband
+  # NetworkMorphism, MetisTuner, BOHB, GPTuner, PBTTuner, DNGOTuner
+  # SMAC need to be installed (pip install nni[SMAC])
+  # https://nni.readthedocs.io/en/stable/Tuner/BuiltinTuner.html#Evolution
+  name: TPE
+  classArgs:
+    optimize_mode: minimize
+trainingService:
+  platform: local

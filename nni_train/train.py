@@ -27,11 +27,12 @@ def data_qc(paragrahp:str):
     return paragrahp
 
 
-def train_model(model, params, optimizer, scheduler, train_dataloader, valid_dataloader=None, epochs=2):
+def train_model(model, params, optimizer, scheduler, train_dataloader, valid_dataloader=None, epochs=2, patience=5):
         stats_name = ["MSE loss", "f1 score", "pearson r"]
         digit = len(str(len(train_dataloader)))
+        early_stopping = EarlyStopping(patience = patience)
 
-        best_loss = 999999999
+        best_loss = np.inf
         loss_fct = torch.nn.MSELoss()
         for epoch in range(1, epochs+1):
             print(f"*****Epoch {epoch} Train Start*****")
@@ -68,6 +69,7 @@ def train_model(model, params, optimizer, scheduler, train_dataloader, valid_dat
                     print(f"Epoch: {epoch}, Step: {step:{digit}d}, LR: {learning_rate:.2e}, Avg Loss: {batch_loss / batch_count:.4f}")
 
                     batch_loss, batch_count = 0,0
+                nni.report_intermediate_result(batch_loss)
 
             print(f"Epoch {epoch} Total Mean Loss : {total_loss/(step+1):.4f}")
             print(f"*****Epoch {epoch} Train Finish*****\n")
@@ -85,7 +87,12 @@ def train_model(model, params, optimizer, scheduler, train_dataloader, valid_dat
                 best_loss = valid_result['MSE loss']
 
             save_checkpoint(model, valid_result, params)
-        
+            early_stopping(valid_result['MSE loss'])
+
+            if early_stopping.early_stop:
+                print('terminating because of early stopping.')
+                break
+
         nni.report_final_result(best_loss)
         print("Train Completed. End Program.")
         
@@ -142,7 +149,7 @@ def initializer(optimizer, train_dataloader, lr=2e-5, epochs=2):
         optimizer, 
         num_warmup_steps = 0,
         num_training_steps = total_steps,
-        num_cycles = 3
+        num_cycles = 1
     )
 
     return optimizer, scheduler
@@ -151,7 +158,7 @@ def initializer(optimizer, train_dataloader, lr=2e-5, epochs=2):
 if __name__ == '__main__':
     device = init_device()
 
-    # get parameters from nni
+    # get params from nni
     params = nni.get_next_parameter()
 
     #### params ####
@@ -159,7 +166,7 @@ if __name__ == '__main__':
     learning_rate = params["learning_rate"]
     optimizer = getattr(torch.optim, params['optimizer'])
     #################
-    epochs = 3
+    epochs = 30
 
     # load data
     with open("./klue-sts-data/klue-sts-v1.1_train.json", "rt", encoding='utf8') as f:
@@ -194,7 +201,15 @@ if __name__ == '__main__':
     config = BertConfig(conf_info.bert)
     config.vocab_size = 12367
 
-    model = BertSts(config = config)
+    if params["num_layer"] > 0:
+        model = BertSts(config = config,
+                        add_fc = init_fclayer(config.hidden_size, 
+                                            config.hidden_size,
+                                            params["num_layer"], 
+                                            [params["neurons"] for _ in range(int(params["num_layer"])-1)], 
+                                            config.hidden_dropout_prob))
+    else:
+        model = BertSts(config = config)
     weights = torch.load(conf_info.bert)
 
     param_names = []
@@ -232,4 +247,5 @@ if __name__ == '__main__':
                 scheduler = scheduler,
                 train_dataloader = train_dataloader, 
                 valid_dataloader = valid_dataloader, 
-                epochs = epochs)
+                epochs = epochs,
+                patience = 1)

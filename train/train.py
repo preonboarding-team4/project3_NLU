@@ -72,7 +72,7 @@ def train_model(model, optimizer, scheduler, train_dataloader, valid_dataloader=
                 print(f"Epoch {epoch} Valid Loss : {valid_loss:.4f}")
                 print(f"*****Epoch {epoch} Valid Finish*****\n")
             
-            save_checkpoint(".", model, optimizer, scheduler, epoch, total_loss/(step+1))
+            # save_checkpoint(".", model, optimizer, scheduler, epoch, total_loss/(step+1))
 
         print("Train Completed. End Program.")
         
@@ -165,7 +165,11 @@ if __name__ == '__main__':
     config = BertConfig(conf_info.bert)
     config.vocab_size = 12367
 
-    model = BertSts(config = config)
+    model = BertSts(config = config,
+                    add_fc = init_fclayer(config.hidden_size, 
+                                          config.hidden_size,
+                                          3, [512, 64], # 레이어 수, [뉴런 수]
+                                          config.hidden_dropout_prob))
     weights = torch.load(conf_info.bert)
 
     param_names = []

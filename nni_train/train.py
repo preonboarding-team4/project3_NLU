@@ -248,4 +248,4 @@ if __name__ == '__main__':
                 train_dataloader = train_dataloader, 
                 valid_dataloader = valid_dataloader, 
                 epochs = epochs,
-                patience = 1)
+                patience = 5)

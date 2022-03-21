@@ -24,9 +24,10 @@ def data_qc(paragrahp:str):
     return paragrahp
 
 
-def train_model(model, optimizer, scheduler, train_dataloader, valid_dataloader=None, epochs=2):
-        loss_fct = torch.nn.MSELoss()
+def train_model(model, optimizer, scheduler, train_dataloader, valid_dataloader=None, epochs=2, patience=5):
+        early_stopping = EarlyStopping(patience = patience)
         
+        loss_fct = torch.nn.MSELoss()
         for epoch in range(epochs):
             print(f"*****Epoch {epoch} Train Start*****")
             
@@ -73,10 +74,14 @@ def train_model(model, optimizer, scheduler, train_dataloader, valid_dataloader=
                 print(f"*****Epoch {epoch} Valid Finish*****\n")
             
             # save_checkpoint(".", model, optimizer, scheduler, epoch, total_loss/(step+1))
+            early_stopping(valid_loss)
+
+            if early_stopping.early_stop:
+                print('terminating because of early stopping.')
+                break
 
         print("Train Completed. End Program.")
         
-
 
 def validate(model, valid_dataloader, loss_fct):
    
@@ -131,6 +136,7 @@ if __name__ == '__main__':
     epochs = 2
     optimizer = AdamW
     #################
+    epochs = 30
 
     # load data
     with open("./klue-sts-data/klue-sts-v1.1_train.json", "rt", encoding='utf8') as f:
@@ -205,4 +211,5 @@ if __name__ == '__main__':
                 scheduler = scheduler,
                 train_dataloader = train_dataloader, 
                 valid_dataloader = valid_dataloader, 
-                epochs = epochs)
+                epochs = epochs,
+                patience = 5)

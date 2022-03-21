@@ -36,6 +36,7 @@ class BertSts(BertPreTrainedModel):
             sim_score = self.output_layer(bert_outputs['pooler_output'])
         return sim_score
 
+
 def init_fclayer(in_size, out_size, layer, neuron, dropout):
     assert layer == len(neuron)+1, "추가할 레이어의 수가 레이어별 뉴런 수보다 1 많아야 합니다."
     st = [in_size]

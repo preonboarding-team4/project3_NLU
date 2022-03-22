@@ -20,7 +20,10 @@ class BertSts(BertPreTrainedModel):
     def __init__(self, config) -> None:
         super(BertSts, self).__init__(config)
         self.bert = BertModel(config)
-        self.Dense = FCLayer(config.hidden_size, config.hidden_size, config.hidden_dropout_prob)
+        self.Dense = FCLayer(config.hidden_size, 
+                             config.hidden_size, 
+                             config.hidden_dropout_prob, 
+                             torch.nn.GELU())
         self.output_layer = FCLayer(config.hidden_size, 1)
 
     def forward(self, input_ids=None, attention_mask=None, token_type_ids=None):

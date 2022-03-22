@@ -8,6 +8,7 @@ from transformers import BertTokenizer
 from torch.utils.data import Dataset
 import mlflow
 from dotenv import load_dotenv
+import numpy as np
 
 load_dotenv()
 
@@ -49,14 +50,7 @@ class Config:
     @property
     def dict(self) -> dict:
         return self.__dict__
-
-
-def data_qc(paragrahp:str):
-    paragrahp = re.sub(r"(\(.*?\))", "", paragrahp)
-    paragrahp = re.sub("((http|https)\:\/\/)?[a-zA-Z0-9\.\/\?\:@\-_=#]+\.([a-zA-Z]){2,6}([a-zA-Z0-9\.\&\/\?\:@\-_=#])*", "", paragrahp)
-    paragrahp = re.sub("'^[a-zA-Z0-9+-_.]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'", "", paragrahp)
-    return paragrahp
-
+        
 
 def cust_col_fn_init_tokenizer(tokenizer, path):
     tokenizer = BertTokenizer.from_pretrained(f"{path}")
@@ -119,7 +113,7 @@ def init_device():
 
 
 def save_checkpoint(model, exp_result, params):
-    exp_name = "task3_sts"
+    exp_name = "task3_sts_dense1"
     scores = ["f1 score",  "pearson r"]
 
     mlflow.set_tracking_uri(os.getenv("MLFLOW_SERVER"))
@@ -135,7 +129,7 @@ def save_checkpoint(model, exp_result, params):
         is_best = (exp_result[scores[0]] > best_f1)|(exp_result[scores[1]] > best_pr)
     else:
         is_best = True
-
+    
     with mlflow.start_run(experiment_id=exp_id):
         print("save metric & params...\r", end="")
         mlflow.log_metrics(exp_result)
@@ -145,4 +139,45 @@ def save_checkpoint(model, exp_result, params):
         if is_best:
             print("save model...\r", end="")
             mlflow.pytorch.log_model(model, "torch_sts")
-            print("save model...OK")
+            print("save model...OK")    
+
+
+class EarlyStopping:
+    """주어진 patience 이후로 validation loss가 개선되지 않으면 학습을 조기 중지"""
+    def __init__(self, patience=7, verbose=False, delta=0):
+        """
+        Args:
+            patience (int): validation loss가 개선된 후 기다리는 기간
+                            Default: 7
+            verbose (bool): True일 경우 각 validation loss의 개선 사항 메세지 출력
+                            Default: False
+            delta (float): 개선되었다고 인정되는 monitered quantity의 최소 변화
+                            Default: 0
+        """
+        self.patience = patience
+        self.verbose = verbose
+        self.counter = 0
+        self.best_score = None
+        self.early_stop = False
+        self.val_loss_min = np.Inf
+        self.delta = delta
+
+
+    def __call__(self, val_loss):
+
+        score = -val_loss
+
+        if self.best_score is None:
+            self.best_score = score
+        elif score < self.best_score + self.delta:
+            self.counter += 1
+            print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
+            if self.counter >= self.patience:
+                self.early_stop = True
+        else:
+            self.best_score = score
+            self.counter = 0
+        
+        if self.verbose and self.val_loss_min > val_loss:
+            print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).')
+            self.val_loss_min = val_loss

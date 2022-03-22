@@ -20,75 +20,85 @@ from utils import *
 
 
 def data_qc(paragrahp:str):
+    patten = r"[^ .,·?!:'”%/()A-Za-z0-9가-힣+]"
+    paragrahp = re.sub(patten, " ", paragrahp)
+    paragrahp = " ".join(paragrahp.split())
     paragrahp = unicodedata.normalize("NFKD", paragrahp)
-    paragrahp = re.sub(r"(\(.*?\))", "", paragrahp)
+    paragraph = re.sub(r'([^)]*)', "", paragrahp)
     paragrahp = re.sub("((http|https)\:\/\/)?[a-zA-Z0-9\.\/\?\:@\-_=#]+\.([a-zA-Z]){2,6}([a-zA-Z0-9\.\&\/\?\:@\-_=#])*", "", paragrahp)
     paragrahp = re.sub("'^[a-zA-Z0-9+-_.]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'", "", paragrahp)
     return paragrahp
 
 
-def train_model(model, params, optimizer, scheduler, train_dataloader, valid_dataloader=None, epochs=2):
-        stats_name = ["MSE loss", "f1 score", "pearson r"]
-        digit = len(str(len(train_dataloader)))
+def train_model(model, params, optimizer, scheduler, train_dataloader, valid_dataloader=None, epochs=2, patience=5):
+    stats_name = ["MSE loss", "f1 score", "pearson r"]
+    digit = len(str(len(train_dataloader)))
+    early_stopping = EarlyStopping(patience = patience)
 
-        best_loss = 999999999
-        loss_fct = torch.nn.MSELoss()
-        for epoch in range(1, epochs+1):
-            print(f"*****Epoch {epoch} Train Start*****")
-            
-            total_loss, batch_loss, batch_count = 0, 0, 0
+    best_loss = np.inf
+    loss_fct = torch.nn.MSELoss()
+    for epoch in range(1, epochs+1):
+        print(f"*****Epoch {epoch} Train Start*****")
         
-            model.train()
+        total_loss, batch_loss, batch_count = 0, 0, 0
+    
+        model.train()
 
-            for step, batch in enumerate(train_dataloader):
-                batch_count+=1
-                
-                batch = tuple(item.to(device) for item in batch)
+        for step, batch in enumerate(train_dataloader):
+            batch_count+=1
             
-                batch_input, batch_label = batch
-                
-                model.zero_grad()
-            
-                logits = model(**batch_input)
-
-                loss = loss_fct(logits.view(-1), batch_label.view(-1))
-                
-                batch_loss += loss.item()
-                total_loss += loss.item()
-            
-                loss.backward()
-                
-                clip_grad_norm_(model.parameters(), 1.0)
-                
-                optimizer.step()
-                scheduler.step()
-                
-                if (step % 25 == 0 and step != 0):
-                    learning_rate = optimizer.param_groups[0]['lr']
-                    print(f"Epoch: {epoch}, Step: {step:{digit}d}, LR: {learning_rate:.2e}, Avg Loss: {batch_loss / batch_count:.4f}")
-
-                    batch_loss, batch_count = 0,0
-
-            print(f"Epoch {epoch} Total Mean Loss : {total_loss/(step+1):.4f}")
-            print(f"*****Epoch {epoch} Train Finish*****\n")
-            
-            if valid_dataloader:
-                print(f"*****Epoch {epoch} Valid Start*****")
-                valid_result = validate(model, valid_dataloader, loss_fct)
-                valid_result = {name:res for name, res in zip(stats_name, valid_result)}
-
-                for name in valid_result:
-                    print(f"Epoch {epoch} {name} Loss : {valid_result[name]:.4f}")
-                print(f"*****Epoch {epoch} Valid Finish*****\n")
-
-            if valid_result['MSE loss'] < best_loss:
-                best_loss = valid_result['MSE loss']
-
-            save_checkpoint(model, valid_result, params)
+            batch = tuple(item.to(device) for item in batch)
         
-        nni.report_final_result(best_loss)
-        print("Train Completed. End Program.")
+            batch_input, batch_label = batch
+            
+            model.zero_grad()
         
+            logits = model(**batch_input)
+
+            loss = loss_fct(logits.view(-1), batch_label.view(-1))
+            
+            batch_loss += loss.item()
+            total_loss += loss.item()
+        
+            loss.backward()
+            
+            clip_grad_norm_(model.parameters(), 1.0)
+            
+            optimizer.step()
+            scheduler.step()
+            
+            if (step % 25 == 0 and step != 0):
+                learning_rate = optimizer.param_groups[0]['lr']
+                print(f"Epoch: {epoch}, Step: {step:{digit}d}, LR: {learning_rate:.2e}, Avg Loss: {batch_loss / batch_count:.4f}")
+
+                batch_loss, batch_count = 0,0
+            nni.report_intermediate_result(batch_loss)
+
+        print(f"Epoch {epoch} Total Mean Loss : {total_loss/(step+1):.4f}")
+        print(f"*****Epoch {epoch} Train Finish*****\n")
+        
+        if valid_dataloader:
+            print(f"*****Epoch {epoch} Valid Start*****")
+            valid_result = validate(model, valid_dataloader, loss_fct)
+            valid_result = {name:res for name, res in zip(stats_name, valid_result)}
+
+            for name in valid_result:
+                print(f"Epoch {epoch} {name} Loss : {valid_result[name]:.4f}")
+            print(f"*****Epoch {epoch} Valid Finish*****\n")
+
+        if valid_result['MSE loss'] < best_loss:
+            best_loss = valid_result['MSE loss']
+
+        save_checkpoint(model, valid_result, params)
+        early_stopping(valid_result['MSE loss'])
+
+        if early_stopping.early_stop:
+            print('terminating because of early stopping.')
+            break
+
+    nni.report_final_result(best_loss)
+    print("Train Completed. End Program.")
+    
 
 def validate(model, valid_dataloader, loss_fct):
    
@@ -142,7 +152,7 @@ def initializer(optimizer, train_dataloader, lr=2e-5, epochs=2):
         optimizer, 
         num_warmup_steps = 0,
         num_training_steps = total_steps,
-        num_cycles = 3
+        num_cycles = 1
     )
 
     return optimizer, scheduler
@@ -151,7 +161,7 @@ def initializer(optimizer, train_dataloader, lr=2e-5, epochs=2):
 if __name__ == '__main__':
     device = init_device()
 
-    # get parameters from nni
+    # get params from nni
     params = nni.get_next_parameter()
 
     #### params ####
@@ -159,7 +169,7 @@ if __name__ == '__main__':
     learning_rate = params["learning_rate"]
     optimizer = getattr(torch.optim, params['optimizer'])
     #################
-    epochs = 3
+    epochs = 30
 
     # load data
     with open("./klue-sts-data/klue-sts-v1.1_train.json", "rt", encoding='utf8') as f:
@@ -173,6 +183,15 @@ if __name__ == '__main__':
                        el['labels']['real-label']]
     del data
     
+    # load augmented data
+    with open("./klue-sts-data/augmentation/bt.json", "rt", encoding="utf8") as f:
+        aug_data = json.load(f)
+    aug_data = pd.DataFrame(aug_data, columns=['sentence1', 'sentence2', 'label'])
+
+    df = pd.concat([df, aug_data]).reset_index(drop = True)
+    print(df.shape)
+
+    # data preprocessing
     df[['sentence1', 'sentence2']] = df[['sentence1', 'sentence2']].applymap(data_qc)
 
     train_dataset, valid_dataset = train_test_split(df, test_size=0.2, random_state=42)
@@ -232,4 +251,5 @@ if __name__ == '__main__':
                 scheduler = scheduler,
                 train_dataloader = train_dataloader, 
                 valid_dataloader = valid_dataloader, 
-                epochs = epochs)
+                epochs = epochs,
+                patience = 3)

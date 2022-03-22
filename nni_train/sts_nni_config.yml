@@ -1,4 +1,4 @@
-experimentName: Semantic Textual Similarity with KR BERT(charactor sub)
+experimentName: STS dense1 add bt
 searchSpaceFile: sts_search_space.json
 trialCommand: python train.py
 trialConcurrency: 1

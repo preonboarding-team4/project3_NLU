@@ -12,15 +12,17 @@
 
 ## 과제 산출물 및 내용
 ### 기업과제3_4팀.ipynb
-* KLUE STS data를 이용한 모델 학습 및 검증
-* 데이터 전처리를 통한 모델 성능 비교 및 최종 모델 선정
-* 데이터 증강 시도?
+* 데이터 전처리, 데이터 증강
+* KRBERT를 통한 모델 제작 및 최적화
+* KLUE STS data를 이용한 모델 학습 및 최적화
+* MSE loss, F1-score, Pearson's r을 통한 성능 평가
 
 ### 기업과제3_4팀_dev_set_score.csv
-* KLUE STS 데이터셋 컬럼에 predict real label, predict binary labe 추가한 csv 파일
+* KLUE-STS dev 데이터의 predict real label, predict binary labe 예측한 결과의 csv 파일
 
 ### 기업과제3_6팀_dev_set_score.ipynb
-* dev_set_score.csv 생성 과정 출력
+* dev_set_score.csv 생성
+* KLUE-STS dev를 모델을 통해 유사도 점수 측정
 * dev_set_score의 예측값과 실제값 F1 score 와 Pearson's R 결과물 출력
 
 ### API
@@ -42,7 +44,7 @@
   * NNI(Neural Network Intelligence)과 Early-stopping을 사용
   * Learning rate, Batch size, Optimizer, Epoch
 * 직접 튜닝
-  *  # of Layer: Liner layer의 개수
+  * \# of Layer: Liner layer의 개수
   * Layer unit(size)s: Liner layer를 구성하는 unit의 수
 
 ### 평가지표

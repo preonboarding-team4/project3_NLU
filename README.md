@@ -8,7 +8,7 @@
 ## 과제 정보
 * 기간: 3.7~24
 
-* 참여자:[이강희](https://kanghee.notion.site/Lee-Kang-Hee-Kay-a04dfb8d8eb24fd3b1ed215219154a3b, "Kangheelee cv"), 이승수, [최혜림](https://github.com/hyelimchoi1223), 최화랑, 황찬희
+* 참여자(포트폴리오): [이강희](https://kanghee.notion.site/Lee-Kang-Hee-Kay-a04dfb8d8eb24fd3b1ed215219154a3b, "Kangheelee cv"), 이승수, [최혜림](https://github.com/hyelimchoi1223), 최화랑, 황찬희
 
 ## 과제 산출물 및 내용
 ### 기업과제3_4팀.ipynb
@@ -33,7 +33,8 @@
 
 ## Process
 ### 모델
-*  KRBERT sub-character
+*  BERT
+*  Pre-trained model: KRBERT sub-character
 
 ### 선정 이유:
 * 학습 데이터, Tokenizing 방식에서 가장 선택 범위가 넓은 BERT 모델

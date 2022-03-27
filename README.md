@@ -20,7 +20,7 @@
 ### 기업과제3_4팀_dev_set_score.csv
 * KLUE-STS dev 데이터의 predict real label, predict binary labe 예측한 결과의 csv 파일
 
-### 기업과제3_6팀_dev_set_score.ipynb
+### 기업과제3_4팀_dev_set_score.ipynb
 * dev_set_score.csv 생성
 * KLUE-STS dev를 모델을 통해 유사도 점수 측정
 * dev_set_score의 예측값과 실제값 F1 score 와 Pearson's R 결과물 출력

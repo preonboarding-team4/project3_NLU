@@ -1,0 +1,1 @@
+{"config": "config_files/bert_config_subchar12367.json", "bert": "torch_model/pytorch_model_subchar12367_bert.bin", "tokenizer": "config_files/vocab_snu_subchar12367.txt", "vocab": "config_files/vocab_snu_subchar12367.pkl"}

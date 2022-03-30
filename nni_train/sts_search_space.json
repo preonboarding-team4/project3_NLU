@@ -3,5 +3,5 @@
     "batch_size": {"_type":"choice", "_value":[8, 16, 32]},
     "learning_rate": {"_type":"uniform", "_value":[2e-8, 2e-5]},
     "num_layer": {"_type":"randint", "_value":[1, 6]},
-    "neurons": {"_type":"randint", "_value":[32, 64, 512]}
+    "neurons": {"_type":"choice", "_value":[32, 64, 512]}
 }
